@@ -42,8 +42,13 @@ update_case() {
 edit_case() {
   local id=${1:?Case ID is required}
   local regexp="${2:? RegExp is required}"
-  local body=$(sed "$regexp" <(get_case $id))
-  update_case $id "$body" | jq -r '.id'
+  local body="$(sed "$regexp" <(get_case $id))"
+  if [ -n "$body" ]
+  then
+    update_case $id "$body" | jq -r '.id'
+  else
+    error "Failed to edit case $id with $regexp"
+  fi
 }
 
 edit_cases() {
@@ -56,10 +61,38 @@ edit_cases() {
   wait
 }
 
+get_section() {
+  local section_id=${1:?Section ID is required}
+  api_request "${url}/index.php?/api/v2/get_section/${section_id}" || error "Couldn't get section $section"
+}
+
 get_sections() {
   local project=${1:?Project ID is required}
   local suite=${2:?Suite ID is required}
   api_request "${url}/index.php?/api/v2/get_sections/${project}&suite_id=${suite}" || error "Couldn't get sections for $project project and $suite suite"
+}
+
+update_section() {
+  local id=${1:?Section ID is required}
+  local body=${2:?Section body is required}
+  api_request "${url}/index.php?/api/v2/update_section/${id}" -X POST -d "$body" || error "Couln't update case with ID $id"
+}
+
+edit_section() {
+  local id=${1:?Section ID is required}
+  local regexp="${2:? RegExp is required}"
+  local body=$(sed "$regexp" <(get_case $id))
+  update_section $id "$body" | jq -r '.id'
+}
+
+edit_sections() {
+  local sections_id="${1:?Sections ID are required}"
+  local regexp="${2:?Regexp is required}"
+  for id in $sections_id
+  do
+    edit_section $id "$regexp" &
+  done
+  wait
 }
 
 get_nested_sections () {
@@ -85,10 +118,10 @@ get_nested_sections () {
 get_nested_sections_by_name() {
   local project=${1:?Project ID is required}
   local suite=${2:?Suite ID is required}
-  local parent_section=${3:?Parent section name ID required}
+  local parent_section="${3:?Parent section name ID required}"
 
   local sections=$(get_sections $project $suite)
-  local parent_section_id="$(echo "$sections" | jq -M ".[] | select(.name == \"$parent_section\") | .id")"
+  local parent_section_id="$(jq -M ".[] | select(.name == \"$parent_section\") | .id" <<< $sections)"
  
   if [ `wc -w <<< $parent_section_id` -eq 0 ]
   then
@@ -114,8 +147,8 @@ get_nested_sections_by_id() {
 get_nested_cases_by_section_name() {
   local project=${1:?Project ID is required}
   local suite=${2:?Suite ID is required}
-  local section_name=${3:?Section name is required}
-  local nested_sections=$(get_nested_sections_by_name $project $suite $section_name)
+  local section_name="${3:?Section name is required}"
+  local nested_sections=$(get_nested_sections_by_name $project $suite "$section_name")
   for nested_section_id in $nested_sections
   do
     get_cases_by_section $project $suite $nested_section_id | jq -M '.[] | .id' &
