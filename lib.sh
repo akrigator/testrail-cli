@@ -56,7 +56,7 @@ edit_cases() {
   local regexp="${2:?Regexp is required}"
   for id in $cases_id
   do
-    edit_case $id "$regexp" &
+    edit_case $id $"$regexp" &
   done
   wait
 }
