@@ -6,17 +6,17 @@ export url="${TESTRAIL_API_URL:?Specify URL for TestRail}"
 export treads="${TESTRAIL_API_TREADS:-16}"
 
 debug() {
-  >&2 echo -e "\033[0;32m$@\033[0m"
+  >&2 echo -e "\033[0;32m$(sed 's/^/DEBUG: /g' <<< "$@")\033[0m"
 }
 export -f debug
 
 warning() {
-  >&2 echo -e "\033[1;33m$@\033[0m"
+  >&2 echo -e "\033[1;33m$(sed 's/^/WARNING: /g' <<< "$@")\033[0m"
 }
 export -f warning
 
 error() {
-  >&2 echo -e "\033[0;31m$@\033[0m"
+  >&2 echo -e "\033[0;31m$(sed 's/^/ERROR: /g' <<< "$@")\033[0m"
   return 1
 }
 export -f error
@@ -131,7 +131,7 @@ get_nested_sections_by_name() {
  
   if [ `wc -w <<< $parent_section_id` -eq 0 ]
   then
-    warning "There is no sections with name '$parent_section'"
+    error "There is no sections with name '$parent_section'"
   elif [ `wc -w <<< $parent_section_id` -eq 1 ]
   then
     get_nested_sections_by_id  $project $suite $parent_section_id
@@ -169,11 +169,17 @@ get_nested_cases_by_section_id() {
 }
 
 TESTRAIL_test() {
-  get_nested_sections_by_name 4 19 'Activity logs'
-  get_nested_sections_by_name 4 19 'Activity Log'
-  get_nested_sections_by_id 4 19 21362
-  get_nested_cases_by_section_id 4 19 21347 | wc -l
-  get_nested_cases_by_section_name 4 19 EGG_DONOR | wc -l
+  debug "Check error if unexist case is requested"
   get_case 34534534
+  debug "Check error if unexist name section is requested"
+  get_nested_sections_by_name 4 19 'Activity logs'
+  debug "Check warning if multiple sections are available with same name"
+  get_nested_sections_by_name 4 19 'Activity Log'
+  debug "Get nested sectios for section with id 21096: 21096, 21099, 21101, 21102, 21145, 21146, 21147, 21148, 21153, 21154, 21155, 21156, 21526"
+  get_nested_sections_by_id 4 19 21096
+  debug "Count of nested cases for the section id"
+  get_nested_cases_by_section_id 4 19 21347 | wc -l
+  debug "Count of nested cases for the section name"
+  get_nested_cases_by_section_name 4 19 EGG_DONOR | wc -l
 }
 
