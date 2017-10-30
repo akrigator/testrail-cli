@@ -1,9 +1,9 @@
 #!/bin/bash
 
-export user_email='rgabdulhakov@natera.com'
-export user_key='mV0DNRm3RFyFqd2lIvNp-z5nl5ZLIrC.B0LKyGy0z'
-export url='https://testrail.natera.com'
-export treads=16
+export user_email="${TESTRAIL_API_USER:?Specify user email for TestRail}"
+export user_key="${TESTRAIL_API_KEY:?Specify password or api-token for TestRail}"
+export url="${TESTRAIL_API_URL:?Specify URL for TestRail}"
+export treads="${TESTRAIL_API_TREADS:-16}"
 
 debug() {
   >&2 echo -e "\033[0;32m$@\033[0m"
@@ -13,11 +13,13 @@ export -f debug
 warning() {
   >&2 echo -e "\033[1;33m$@\033[0m"
 }
+export -f warning
 
 error() {
   >&2 echo -e "\033[0;31m$@\033[0m"
   return 1
 }
+export -f error
 
 api_request() {
   curl -fs -H "Content-Type: application/json" -u "${user_email:?User is empty}:${user_key:?Password or key is empty}" "$@"
@@ -152,6 +154,7 @@ get_nested_cases_by_section_name() {
   local project=${1:?Project ID is required}
   local suite=${2:?Suite ID is required}
   local section_name="${3:?Section name is required}"
+
   local nested_sections=$(get_nested_sections_by_name $project $suite "$section_name")
   tr ' ' '\n' <<< $nested_sections | parallel -q -j$treads get_cases_by_section $project $suite {} |  jq -M '.[] | .id'
 }
@@ -160,11 +163,12 @@ get_nested_cases_by_section_id() {
   local project=${1:?Project ID is required}
   local suite=${2:?Suite ID is required}
   local section_id=${3:?Section ID is required}
+
   local nested_sections=$(get_nested_sections_by_id $project $suite $section_id)
   tr ' ' '\n' <<< $nested_sections | parallel -q -j$treads get_cases_by_section $project $suite {} | jq -M '.[] | .id'
 }
 
-_test() {
+TESTRAIL_test() {
   get_nested_sections_by_name 4 19 'Activity logs'
   get_nested_sections_by_name 4 19 'Activity Log'
   get_nested_sections_by_id 4 19 21362
