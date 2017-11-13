@@ -11,7 +11,7 @@ debug() {
 export -f debug
 
 warning() {
-  >&2 echo -e "\033[1;33m$(sed 's/^/WARNING: /g' <<< "$@")\033[0m"
+  >&2 echo -e "\033[0;33m$(sed 's/^/WARNING: /g' <<< "$@")\033[0m"
 }
 export -f warning
 
@@ -22,7 +22,7 @@ error() {
 export -f error
 
 api_request() {
-  curl -fs -H "Content-Type: application/json" -u "${user_email:?User is empty}:${user_key:?Password or key is empty}" "$@"
+  curl -s -H "Content-Type: application/json" -u "${user_email:?User is empty}:${user_key:?Password or key is empty}" "$@"
 }
 export -f api_request
 
@@ -67,6 +67,40 @@ update_section() {
 }
 export -f update_section
 
+get_results() {
+  local test=${1:?Test ID is required}
+  api_request "${url}/index.php?/api/v2/get_results/${test}" || error "Couln't get result for test $test"
+}
+export -f get_results
+
+get_results_for_case() {
+  local run=${1:?Run ID is required}
+  local case=${2:?Case ID is required}
+  local responce=$(api_request "${url}/index.php?/api/v2/get_results_for_case/${run}/${case}") # || error "Couln't get results for case $case in run $run"
+  diff <(jq -S . <<< $responce) <(jq -S . <<< '{"error":"No (active) test found for the run\/case combination."}') &>/dev/null || echo $responce && return 1
+}
+export -f get_results_for_case
+
+get_formated_results_for_case() {
+  local run=${1:?Run ID is required}
+  local case=${2:?Case ID is required}
+  local format=${3:?Jq format is requred}
+  get_results_for_case $run $case | jq "$format"
+}
+export -f get_formated_results_for_case
+
+get_results_for_section() {
+  local project=${1:?Project ID is required}
+  local suite=${2:?Suite ID is required}
+  local run=${3:?Run ID is required}
+  local section=${4:?Section ID is requred}
+
+  local cases=$(get_nested_cases_by_section_id "$project" "$suite" "$section")
+  local format='[ .[] | {id, test_id, status_id, comment} | select(.status_id!=null)]'
+  tr ' ' '\n' <<< $cases  | parallel -q -j$treads get_formated_results_for_case "$run" {} "$format" | jq -s add
+}
+export -f get_results_for_section
+
 edit_case() {
   local id=${1:?Case ID is required}
   local regexp="${2:? RegExp is required}"
@@ -77,6 +111,7 @@ edit_case() {
   else
     error "Failed to edit case $id with $regexp"
   fi
+  echo blabla
 }
 export -f edit_case
 
@@ -169,6 +204,9 @@ get_nested_cases_by_section_id() {
 }
 
 TESTRAIL_test() {
+  set +e
+  debug 'Error Edit unexist case'
+  edit_case 99999999999 's///g'
   debug "Check error if unexist case is requested"
   get_case 34534534
   debug "Check error if unexist name section is requested"
@@ -181,5 +219,6 @@ TESTRAIL_test() {
   get_nested_cases_by_section_id 4 19 21347 | wc -l
   debug "Count of nested cases for the section name"
   get_nested_cases_by_section_name 4 19 EGG_DONOR | wc -l
+  debug "Get failed tests in the section of plan"
+  get_results_for_section 4 19 1808 21064 | jq '.[] | select((.status_id!=1) and (.comment |contains("Connection reset") |not))'
 }
-
