@@ -34,7 +34,7 @@ get_case() {
     error "Case $id: $(jq .error <<< $responce)"
     return $?
   else
-    echo $responce
+    echo "$responce"
   fi
 }
 export -f get_case
@@ -89,7 +89,7 @@ get_results_for_case() {
     error "Run $run case $case: $(jq .error <<< $responce)"
     return 1
   else
-    echo $responce
+    echo "$responce"
   fi
 }
 export -f get_results_for_case
