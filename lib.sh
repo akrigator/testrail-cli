@@ -28,7 +28,14 @@ export -f api_request
 
 get_case() {
   local id=${1:?Case ID is required}
-  api_request "${url}/index.php?/api/v2/get_case/${id}" || error "Couldn't get case with ID $id"
+  local responce=$(api_request "${url}/index.php?/api/v2/get_case/${id}") # || error "Couldn't get case with ID $id"
+  if [ "$responce" == '{"error":"Field :case_id is not a valid test case."}' ]
+  then
+    error "Case $id: $(jq .error <<< $responce)"
+    return $?
+  else
+    echo $responce
+  fi
 }
 export -f get_case
 
@@ -76,8 +83,14 @@ export -f get_results
 get_results_for_case() {
   local run=${1:?Run ID is required}
   local case=${2:?Case ID is required}
-  local responce=$(api_request "${url}/index.php?/api/v2/get_results_for_case/${run}/${case}") # || error "Couln't get results for case $case in run $run"
-  diff <(jq -S . <<< $responce) <(jq -S . <<< '{"error":"No (active) test found for the run\/case combination."}') &>/dev/null || echo $responce && return 1
+  local responce=$(api_request "${url}/index.php?/api/v2/get_results_for_case/${run}/${case}")
+  if [ "$responce" == '{"error":"Field :case_id is not a valid test case."}' ] || [ "$responce" == '{"error":"No (active) test found for the run\/case combination."}' ] 
+  then
+    error "Run $run case $case: $(jq .error <<< $responce)"
+    return 1
+  else
+    echo $responce
+  fi
 }
 export -f get_results_for_case
 
@@ -111,7 +124,6 @@ edit_case() {
   else
     error "Failed to edit case $id with $regexp"
   fi
-  echo blabla
 }
 export -f edit_case
 
@@ -204,7 +216,6 @@ get_nested_cases_by_section_id() {
 }
 
 TESTRAIL_test() {
-  set +e
   debug 'Error Edit unexist case'
   edit_case 99999999999 's///g'
   debug "Check error if unexist case is requested"
