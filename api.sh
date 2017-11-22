@@ -92,7 +92,7 @@ get_results_for_section() {
 
   local cases=$(get_nested_cases_by_section_id "$project" "$suite" "$section")
   local format='[ .[] | {id, test_id, status_id, comment} | select(.status_id!=null)]'
-  tr ' ' '\n' <<< $cases  | parallel -q -j$treads get_formated_results_for_case "$run" {} "$format" | jq -s add
+  tr ' ' '\n' <<< $cases  | parallel -q -j$threads get_formated_results_for_case "$run" {} "$format" | jq -s add
 }
 export -f get_results_for_section
 
@@ -112,7 +112,7 @@ export -f edit_case
 edit_cases() {
   local cases_id="${1:?Cases ID are required}"
   local regexp="${2:?Regexp is required}"
-  tr ' ' '\n' <<< $cases_id | parallel -q -j$treads edit_case {} $"$regexp"
+  tr ' ' '\n' <<< $cases_id | parallel -q -j$threads edit_case {} $"$regexp"
 }
 export -f edit_cases
 
@@ -127,7 +127,7 @@ export -f edit_section
 edit_sections() {
   local sections_id="${1:?Sections ID are required}"
   local regexp="${2:?Regexp is required}"
-  tr ' ' '\n' <<< $sections_id | parallel -q -j$treads edit_section {} $"$regexp"
+  tr ' ' '\n' <<< $sections_id | parallel -q -j$threads edit_section {} $"$regexp"
 }
 
 get_nested_sections () {
@@ -185,7 +185,7 @@ get_nested_cases_by_section_name() {
   local section_name="${3:?Section name is required}"
 
   local nested_sections=$(get_nested_sections_by_name $project $suite "$section_name")
-  tr ' ' '\n' <<< $nested_sections | parallel -q -j$treads get_cases_by_section $project $suite {} |  jq -M '.[] | .id'
+  tr ' ' '\n' <<< $nested_sections | parallel -q -j$threads get_cases_by_section $project $suite {} |  jq -M '.[] | .id'
 }
 
 get_nested_cases_by_section_id() {
@@ -194,7 +194,7 @@ get_nested_cases_by_section_id() {
   local section_id=${3:?Section ID is required}
 
   local nested_sections=$(get_nested_sections_by_id $project $suite $section_id)
-  tr ' ' '\n' <<< $nested_sections | parallel -q -j$treads get_cases_by_section $project $suite {} | jq -M '.[] | .id'
+  tr ' ' '\n' <<< $nested_sections | parallel -q -j$threads get_cases_by_section $project $suite {} | jq -M '.[] | .id'
 }
 
 TESTRAIL_test() {
