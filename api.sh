@@ -1,11 +1,7 @@
 #!/bin/bash
 
 source "$(dirname "${BASH_SOURCE[0]}")/output.sh"
-
-export user_email="${TESTRAIL_API_USER:?Specify user email for TestRail}"
-export user_key="${TESTRAIL_API_KEY:?Specify password or api-token for TestRail}"
-export url="${TESTRAIL_API_URL:?Specify URL for TestRail}"
-export treads="${TESTRAIL_API_TREADS:-16}"
+source "$(dirname "${BASH_SOURCE[0]}")/config.sh"
 
 api_request() {
   curl -s -H "Content-Type: application/json" -u "${user_email:?User is empty}:${user_key:?Password or key is empty}" "$@"
