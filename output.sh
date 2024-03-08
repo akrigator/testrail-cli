@@ -1,24 +1,49 @@
 #!/bin/bash
 
-source "$(dirname "${BASH_SOURCE[0]}")/config.sh"
-
-debug() {
-  [[ "$debug_output" ]] && >&2 echo -e "\033[0;36m$(sed 's/^/DEBUG: /g' <<< "$@")\033[0m"
+caller_func_name() {
+  test "$BASH_VERSION" && echo "${FUNCNAME[2]}" \
+  || (test "$ZSH" && sed 's/ / < /g' <<< "${funcstack[@]:2}") \
+  || >&2 ERROR "COULD NOT DETERMINE SHELL"
 }
-export -f debug
 
-info() {
-  >&2 echo -e "\033[0;32m$(sed 's/^/INFO: /g' <<< "$@")\033[0m"
+#read_stdin() {
+#  local stdin
+#
+#  test ! -t 0 \
+#  && while IFS= read -r line
+#  do
+#    stdin+=$line
+#  done
+#
+#  printf "%s" "$stdin"
+#}
+
+color_to_stderr() {
+  local color=${1:?Color}
+  local message=${2:-}
+  local preformatted=${3:-}
+
+  >&2 printf "\033[0;$color$(caller_func_name) >>> %b%s\033[0m\n" "$message" "$preformatted"
 }
-export -f debug
 
-warning() {
-  >&2 echo -e "\033[0;33m$(sed 's/^/WARNING: /g' <<< "$@")\033[0m"
+DEBUG() {
+  test "$TESTRAIL_API_DEBUG" \
+  && color_to_stderr '36m' "${1}" "${2}"
 }
-export -f warning
+export -f DEBUG
 
-error() {
-  >&2 echo -e "\033[0;31m$(sed 's/^/ERROR: /g' <<< "$@")\033[0m"
+INFO() {
+  color_to_stderr '32m' "${1}" "${2}"
+}
+export -f INFO
+
+WARNING() {
+  color_to_stderr '33m' "${1}" "${2}"
+}
+export -f WARNING
+
+ERROR() {
+  color_to_stderr '31m' "${1}" "${2}"
   return 1
 }
-export -f error
+export -f ERROR
