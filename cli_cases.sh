@@ -80,8 +80,13 @@ backup_nested_cases_from_section() {
   local project=${1:?Project ID is required}
   local suite=${2:?Suite ID is required}
   local section_id=${3:?Section ID is required}
-  local backup_dir="${section_id}_backup_$(date "+%Y-%m-%d_%H:%M:%S")"
-  local cases_id=$(get_nested_cases_by_section_id $section_id)
-  INFO "$(dirname $backup_dir)"
-  tr ' ' '\n' <<< $cases_id | parallel -j$threads backup_case {} "$backup_dir"
+  local backup_dir
+
+  ERROR "NOT IMPLEMENTED" || return 1
+
+  backup_dir="$(realpath)/${section_id}_backup_$(date "+%Y-%m-%d_%H:%M:%S")"
+  get_nested_cases_by_section_id "$section_id" | tr ' ' '\n' | while IFS= read -r case_id
+  do
+    backup_case "$case_id" "$backup_dir"
+  done
 }
