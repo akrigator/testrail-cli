@@ -19,9 +19,9 @@ $ brew install jq
 Add to the bash_profile file and specify a correct path:
 
 ```shell
-export TESTRAIL_API_USER="rgabdulhakov@natera.com"
+export TESTRAIL_API_USER="akrigator@gmail.com"
 export TESTRAIL_API_KEY="mV0DXXm3RFyFqd2lIvNp-z5nl5ZLIrC.B0LKyGy0z"
-export TESTRAIL_API_URL="https://testrail.natera.com"
+export TESTRAIL_API_URL="http://localhost:8000"
 export TESTRAIL_API_TREADS="16"
 #export TESTRAIL_API_DEBUG="yes"
 source ~/Develop/testrail-api/testrail_commands.sh
