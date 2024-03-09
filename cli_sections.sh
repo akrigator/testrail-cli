@@ -1,17 +1,15 @@
 #!/bin/bash
 
-source "./api.sh"
-
 get_nested_sections () {
   local root_sections_ids="${1:?Multyline list of root sections}"
   local suite project sections children
   while IFS= read -r root
   do
-    suite="$(api_get_section "$root" | jq -r '.suite_id')" \
+    suite="$(./api get_section "$root" | jq -r '.suite_id')" \
     && test "$suite" \
-    && project="$(api_get_suite "$suite" | jq -r '.project_id')" \
+    && project="$(./api get_suite "$suite" | jq -r '.project_id')" \
     && test "$project" \
-    && sections="$(api_get_sections "$project" "$suite")" \
+    && sections="$(./api get_sections "$project" "$suite")" \
     && test "$sections" \
     && children="$(jq -M ".[] | select(.parent_id == $root) | .id" <<< "$sections")" && test "$children" \
     && echo "$root" "$children" \
@@ -27,7 +25,7 @@ get_nested_sections_by_name() {
   local sections
   local section_ids
   local section_ids_count
-  sections=$(api_get_sections "$project" "$suite") \
+  sections=$(./api get_sections "$project" "$suite") \
   && section_ids="$(jq -M ".[] | select(.name == \"$section_name\") | .id" <<< "$sections")" \
   && section_ids_count="$(wc -w <<< "$section_ids")" \
   && test "$section_ids_count" -eq 1 \
@@ -45,10 +43,10 @@ edit_section() {
     cmd=${2:?Comand is required} \
     body \
     new_body \
-  && body=$(api_get_section "$id") \
+  && body=$(./api get_section "$id") \
   && new_body=$(eval "$cmd" <<< "$body") \
   && test "$new_body" \
   || ERROR "Fail apply the '$cmd' to:\n" "$body" \
-  && api_update_section "$id" "$new_body" > /dev/null
+  && ./api update_section "$id" "$new_body" > /dev/null
 }
 export -f edit_section

@@ -1,7 +1,5 @@
 #!/bin/bash
 
-source "./api.sh"
-
 apply_cmd() {
   local \
     cmd=${1:?Command} \
@@ -15,10 +13,9 @@ get_case() {
   local case_id=''
   tr ' ' '\n' <<< "$cases_ids" | while IFS= read -r case_id
   do
-    api_get_case "$case_id"
+    ./api get_case "$case_id"
   done | jq -s . | jq -c 'select(length > 0)'
 }
-export -f get_case
 
 get_case_formatted() {
   get_case "${*:?Case id is required}" | jq -r '
@@ -29,7 +26,6 @@ get_case_formatted() {
     "Expected Results:\n\(.custom_expected)\n\n"
   '
 }
-export -f get_case_formatted
 
 edit_case() {
   local cmd=${1:?Comand is required}
@@ -40,8 +36,7 @@ edit_case() {
   do
     local case_before=''
     local case_after=''
-
-    case_before="$(api_get_case "$case_id")"
+    case_before="$(get_case "$case_id" | jq -c '.[]')"
     test "$case_before" \
     || ERROR "Fail on getting case $case_id" \
     || continue
@@ -51,11 +46,10 @@ edit_case() {
     || ERROR "Fail on editing case $case_id" \
     || break
 
-    api_update_case "$case_id" "$case_after" | jq -c .id \
+    ./api update_case "$case_id" "'$case_after'" | jq -c '.id' \
     || ERROR "Fail on uploading case $case_id update:\n" "$case_after"
   done
 }
-export -f edit_case
 
 get_nested_cases_by_section_name() {
   local project=${1:?Project ID is required}
@@ -63,27 +57,24 @@ get_nested_cases_by_section_name() {
   local section_name="${3:?Section name is required}"
   get_nested_sections_by_name "$project" "$suite" "$section_name" | while IFS= read -r section
   do
-    api_get_cases_from_section "$section" | jq -M '.[] | .id'
+    ./api get_cases_from_section "$section" | jq -M '.[] | .id'
   done
 }
-export -f get_nested_cases_by_section_name
 
 get_nested_cases_by_section_id() {
   local section_id=${1:?Section ID is required}
   get_nested_sections "$section_id" | while IFS= read -r section
   do
-    api_get_cases_from_section "$section" | jq -M '.[] | .id'
+    ./api get_cases_from_section "$section" | jq -M '.[] | .id'
   done
 }
-export -f get_nested_cases_by_section_id
 
 backup_case() {
   local case_id="${1:?Case ID is required}"
   local backup_dir="${2:?Backup directory is required}"
   mkdir -p "$backup_dir"
-  api_get_case "$case_id" | jq . > "${backup_dir}/${case_id}.json"
+  get_case "$case_id" | jq . > "${backup_dir}/${case_id}.json"
 }
-export -f backup_case
 
 backup_nested_cases_from_section() {
   local project=${1:?Project ID is required}
@@ -94,4 +85,3 @@ backup_nested_cases_from_section() {
   INFO "$(dirname $backup_dir)"
   tr ' ' '\n' <<< $cases_id | parallel -j$threads backup_case {} "$backup_dir"
 }
-export -f backup_nested_cases_from_section

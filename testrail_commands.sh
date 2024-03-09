@@ -3,10 +3,9 @@
 TESTRAIL_API_SOURCE=$(dirname "${BASH_SOURCE[0]-$0}")
 
 source "${TESTRAIL_API_SOURCE}/output.sh"
-#source "${TESTRAIL_API_SOURCE}/api.sh"
-source "${TESTRAIL_API_SOURCE}/tr_cases.sh"
-source "${TESTRAIL_API_SOURCE}/tr_results.sh"
-source "${TESTRAIL_API_SOURCE}/tr_sections.sh"
+source "${TESTRAIL_API_SOURCE}/cli_cases.sh"
+source "${TESTRAIL_API_SOURCE}/cli_results.sh"
+source "${TESTRAIL_API_SOURCE}/cli_sections.sh"
 
 test "$TESTRAIL_API_USER" || ERROR "Specify user or email in TESTRAIL_API_USER variable"
 test "$TESTRAIL_API_KEY" || ERROR "Specify password or api-token TESTRAIL_API_KEY in variable"
