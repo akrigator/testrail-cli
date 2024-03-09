@@ -30,7 +30,7 @@ TESTRAIL_API_TEST() {
     "get_nested_sections_by_name 4 1 'Activity Log'"
   tr_test 'Check error if on exist id section is requested' \
     "get_nested_sections 9999999"
-  tr_test 'Get nested sections for section with id: 1 2 3 4 5' \
+  tr_test 'Get nested sections for section with id: 1 2 3' \
     "get_nested_sections 1"
   tr_test 'Count of nested cases for the section id: 5' \
     "get_nested_cases_by_section_id 1 | wc -l"
