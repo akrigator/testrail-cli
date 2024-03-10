@@ -10,6 +10,7 @@ source "${TESTRAIL_API_SOURCE}/cli_sections.sh"
 test "$TESTRAIL_API_USER" || ERROR "Specify user or email in TESTRAIL_API_USER variable"
 test "$TESTRAIL_API_KEY" || ERROR "Specify password or api-token TESTRAIL_API_KEY in variable"
 test "$TESTRAIL_API_URL" || ERROR "Specify URL in TESTRAIL_API_URL variable"
+test "$TESTRAIL_API_THREAD" || ERROR "Specify URL in TESTRAIL_API_URL variable"
 test "$TESTRAIL_API_DEBUG" && WARNING "TESTRAIL_API_DEBUG is set"
 
 TESTRAIL_API_TEST() {
@@ -34,7 +35,7 @@ TESTRAIL_API_TEST() {
   tr_test 'Count of nested cases for the section id: 5' \
     "get_nested_cases_by_section_id 1 | wc -l"
   tr_test 'Count of nested cases for the section name: 5' \
-    "get_nested_cases_by_section_name 1 1 API | wc -l"
+    "get_nested_cases_by_section_name 1 1 Base | wc -l"
   tr_test 'Get failed tests in the section of plan: 1' \
     "get_formatted_results 1"
 }

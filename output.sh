@@ -43,7 +43,8 @@ WARNING() {
 export -f WARNING
 
 ERROR() {
+  local prev_rc=$?
   color_to_stderr '31m' "${1}" "${2}"
-  return 1
+  return $prev_rc
 }
 export -f ERROR
