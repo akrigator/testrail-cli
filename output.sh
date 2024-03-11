@@ -6,17 +6,14 @@ caller_func_name() {
   || >&2 ERROR "COULD NOT DETERMINE SHELL"
 }
 
-#read_stdin() {
-#  local stdin
-#
-#  test ! -t 0 \
-#  && while IFS= read -r line
-#  do
-#    stdin+=$line
-#  done
-#
-#  printf "%s" "$stdin"
-#}
+read_stdin() {
+  test ! -t 0 \
+  && while IFS= read -r line
+  do
+    std_in+=("$line")
+    printf "%s" "$line"
+  done
+}
 
 color_to_stderr() {
   local color=${1:?Color}

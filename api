@@ -4,14 +4,17 @@ source output.sh
 
 _request() {
   local url="${TESTRAIL_API_URL}/index.php?/api/v2/${1:?Endpoint is required}"
-  local curl_argv=${*:2}
+  local curl_argv=("${@:2}")
   local credential="$TESTRAIL_API_USER:$TESTRAIL_API_KEY"
-  local command="curl -s -H 'Content-Type: application/json' -u '$credential' '$url' $curl_argv"
   local response
   local api_error
 
-  response=$(eval "$command") \
-  || ERROR "Curl return code is $? for command:\n" "$command" \
+  response=$(curl -s \
+    -H 'Content-Type: application/json' \
+    -u "$credential" \
+    "$url" \
+    "${curl_argv[@]}") \
+  || ERROR "Curl return code is $? for command:\n"  \
   || return $?
 
   api_error=$(jq -r 'if type =="object" and has("error") then .error else empty end' <<< "$response") \
@@ -33,9 +36,9 @@ get_case() {
 
 update_case() {
   local id=${1:?Case ID is required}
-  local case=${2:?Test case is required}
-  _request "update_case/${id}" -X POST -d "'$case'" \
-  || ERROR "Couldn't update case with ID $id:\n" "$case" \
+  local case_json=${2:?Test case is required}
+  _request "update_case/${id}" -X POST -d "$case_json" \
+  || ERROR "Couldn't update case with ID $id:\n" "$case_json" \
   || return $?
 }
 

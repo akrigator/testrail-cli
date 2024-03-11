@@ -1,6 +1,6 @@
 #!/bin/bash
 
-get_nested_sections () {
+get_nested_sections() {
   local root_sections_ids="${1:?Multyline list of root sections}"
   local suite project sections children
   while IFS= read -r root
