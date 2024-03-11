@@ -1,16 +1,17 @@
 #!/bin/bash
 
 TESTRAIL_API_SOURCE=$(dirname "${BASH_SOURCE[0]-$0}")
+export PATH="$PATH:$TESTRAIL_API_SOURCE"
 
 source "${TESTRAIL_API_SOURCE}/output.sh"
 source "${TESTRAIL_API_SOURCE}/cli_cases.sh"
 source "${TESTRAIL_API_SOURCE}/cli_results.sh"
 source "${TESTRAIL_API_SOURCE}/cli_sections.sh"
 
-test "$TESTRAIL_API_USER" || ERROR "Specify user or email in TESTRAIL_API_USER variable"
-test "$TESTRAIL_API_KEY" || ERROR "Specify password or api-token TESTRAIL_API_KEY in variable"
-test "$TESTRAIL_API_URL" || ERROR "Specify URL in TESTRAIL_API_URL variable"
-test "$TESTRAIL_API_THREAD" || ERROR "Specify URL in TESTRAIL_API_URL variable"
+test "$TESTRAIL_API_USER" || ERROR "Specify user or email in TESTRAIL_API_USER env variable"
+test "$TESTRAIL_API_KEY" || ERROR "Specify api-token TESTRAIL_API_KEY in env variable"
+test "$TESTRAIL_API_URL" || ERROR "Specify url in TESTRAIL_API_URL env variable"
+test "$TESTRAIL_API_THREAD" || ERROR "Specify threads count in TESTRAIL_API_THREAD env variable"
 test "$TESTRAIL_API_DEBUG" && WARNING "TESTRAIL_API_DEBUG is set"
 
 TESTRAIL_API_TEST() {

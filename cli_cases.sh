@@ -13,7 +13,7 @@ get_case() {
   local rc=0
   local cases
 
-  cases="$(xargs -I{} -n1 -P"$TESTRAIL_API_THREAD" ./api get_case {} <<< "${cases_ids[*]}")"
+  cases="$(xargs -I{} -n1 -P"$TESTRAIL_API_THREAD" tr_api get_case {} <<< "${cases_ids[*]}")"
   rc=$?
 
   jq -sc '. | select(length > 0)' <<< "$cases" || ERROR "Fails collect cases to json array"
@@ -38,7 +38,7 @@ get_cases_from_section() {
   local project_id
   local suite_id
 
-  suite_id="$(./api get_section "$section_id" | jq -r '.suite_id')"
+  suite_id="$(tr_api get_section "$section_id" | jq -r '.suite_id')"
   test "$suite_id" \
   || ERROR "No suite ID $section_id for section ID" \
   || return $?
@@ -48,7 +48,7 @@ get_cases_from_section() {
   || ERROR "No project ID $suite_id for suite ID" \
   || return $?
 
-  ./api get_cases_from_section "$project_id" "$suite_id" "$section_id" \
+  tr_api get_cases_from_section "$project_id" "$suite_id" "$section_id" \
   || ERROR "Couldn't get cases for section ID $section_id" \
   || return $?
 }
@@ -73,7 +73,7 @@ edit_case() {
     || ERROR "Fail on editing case $case_id" \
     || break
 
-    ./api update_case "$case_id" "'$case_after'" | jq -c '.id' \
+    tr_api update_case "$case_id" "'$case_after'" | jq -c '.id' \
     || ERROR "Fail on uploading case $case_id update:\n" "$case_after"
   done
 }
@@ -84,7 +84,7 @@ get_nested_cases_by_section_name() {
   local section_name="${3:?Section name is required}"
   get_nested_sections_by_name "$project" "$suite" "$section_name" | while IFS= read -r section
   do
-    ./api get_cases_from_section "$section" | jq -M '.[] | .id'
+    tr_api get_cases_from_section "$section" | jq -M '.[] | .id'
   done
 }
 
@@ -92,7 +92,7 @@ get_nested_cases_by_section_id() {
   local section_id=${1:?Section ID is required}
   get_nested_sections "$section_id" | while IFS= read -r section
   do
-    ./api get_cases_from_section "$section" | jq -M '.[] | .id'
+    tr_api get_cases_from_section "$section" | jq -M '.[] | .id'
   done
 }
 

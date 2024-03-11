@@ -4,7 +4,7 @@ get_formatted_results_for_case() {
   local run=${1:?Run ID is required}
   local case=${2:?Case ID is required}
   local format=${3:?Jq format is requred}
-  ./api get_results_for_case "$run" "$case" | jq "$format"
+  tr_api get_results_for_case "$run" "$case" | jq "$format"
 }
 export -f get_formatted_results_for_case
 
@@ -12,10 +12,10 @@ get_formatted_results() {
   local run=${1:?Run ID is required}
   local format='[ .[] | {id, test_id, status_id, comment} | select(.status_id!=null)]'
 
-  ./api get_results_for_run "$run" | jq -r '.[] | .test_id' \
+  tr_api get_results_for_run "$run" | jq -r '.[] | .test_id' \
   | while read -r test
   do
-    ./api get_test "$test"
+    tr_api get_test "$test"
   done | jq -r '.case_id' \
   | while read -r case
   do
