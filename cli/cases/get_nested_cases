@@ -1,0 +1,11 @@
+#!/bin/bash
+source "${TESTRAIL_API_SOURCE}/cli/output.sh"
+
+sections_ids=("${@}")
+
+sections_ids+=( "$(read_stdin)" )
+
+test "${#sections_ids[@]}" -le 1 && ERROR "Nothing to get" && exit 1
+
+nested_sections=$(get_nested_sections "${sections_ids[@]}")
+get_cases_from_sections $nested_sections | jq -M '.[] | .id'

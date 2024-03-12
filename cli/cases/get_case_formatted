@@ -1,0 +1,15 @@
+#!/bin/bash
+source "${TESTRAIL_API_SOURCE}/cli/output.sh"
+
+cases_ids=("${@}")
+
+cases_ids+=("$(read_stdin)")
+
+get_case "${cases_ids[@]}" | jq -r '
+.[] |
+"C\(.id): \(.title)\n\n"+
+"Preconditions:\n\(.custom_preconds)\n\n"+
+"Steps:\n\(.custom_steps)\n\n"+
+"Expected Results:\n\(.custom_expected)\n\n"
+'
+exit $?

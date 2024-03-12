@@ -1,0 +1,15 @@
+#!/bin/bash
+source "${TESTRAIL_API_SOURCE}/cli/output.sh"
+
+section_id="${1:?Section IS is required}"
+
+suite=$(get_section "$section_id" | jq -r '.[] | .suite_id')
+test "$suite" || exit 1
+
+project=$(get_suite "$suite" | jq -r '.project_id')
+test "$project" || exit 2
+
+sections=$(get_sections "$project" "$suite")
+test "$sections" || exit 3
+
+jq ".[] | select(.parent_id==$section_id) | .id" <<< "$sections"

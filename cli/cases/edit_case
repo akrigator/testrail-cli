@@ -1,0 +1,19 @@
+#!/bin/bash
+source "${TESTRAIL_API_SOURCE}/cli/output.sh"
+cmd=${1:?Comand is required}
+cases_ids=("${@:2}")
+rc=0
+
+cases_ids+=( "$(read_stdin)" )
+
+test ${#cases_ids[@]} -eq 0 \
+&& ERROR "Cases IDs are required" \
+&& exit 1
+
+json_before=$(get_case "${cases_ids[@]}") || exit $?
+json_after=$(apply_cmd "$cmd" <<< "$json_before") || exit $?
+
+#vimdiff -c 'windo set wrap'  <(jq -r <<< "$json_before") <(jq -r <<< "$json_after")
+#diff --color=always  <(jq -r <<< "$json_before") <(jq -r <<< "$json_after")
+
+update_case <<< "$json_after" || exit $?

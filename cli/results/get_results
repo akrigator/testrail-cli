@@ -1,0 +1,10 @@
+#!/bin/bash
+source "${TESTRAIL_API_SOURCE}/cli/output.sh"
+
+run=${1:?Run ID is required}
+
+tr_api get_results_for_run "$run" | jq -r '.[] | .test_id' \
+| parallel -n1 -I% -P"$TESTRAIL_API_THREAD" 'tr_api get_test %' \
+| jq -r '.case_id' \
+| parallel -n1 -I% -P"$TESTRAIL_API_THREAD" "get_results_for_case '$run' '%'" \
+| jq -s add

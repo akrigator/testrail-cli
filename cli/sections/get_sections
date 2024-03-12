@@ -1,0 +1,9 @@
+#!/bin/bash
+source "${TESTRAIL_API_SOURCE}/cli/output.sh"
+
+project_id=${1:?Project ID is required}
+suite_id=${2:?Suite ID is required}
+
+tr_api get_sections "$project_id" "$suite_id" \
+|| ERROR "Fail to get sections for suite $suite_id in project $project_id" \
+|| exit $?

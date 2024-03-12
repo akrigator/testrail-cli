@@ -1,0 +1,12 @@
+#!/bin/bash
+source "${TESTRAIL_API_SOURCE}/cli/output.sh"
+
+section_id="${1:?Section ID is required}"
+
+suite_id=$(get_section "$section_id" | jq -r '.[]|.suite_id')
+test -n "$suite_id" || exit 1
+
+project_id=$(get_suite "$suite_id" | jq -r .project_id)
+test -n "$project_id" || exit 2
+
+tr_api get_cases_from_section "$project_id" "$suite_id" "$section_id"

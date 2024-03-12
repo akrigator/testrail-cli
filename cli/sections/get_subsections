@@ -1,0 +1,8 @@
+#!/bin/bash
+source "${TESTRAIL_API_SOURCE}/cli/output.sh"
+
+root_ids=("${@}")
+
+root_ids+=( "$(read_stdin)" )
+
+parallel -n1 -I% -d" " -r -P"$TESTRAIL_API_THREAD" resolve_subsections % ::: "${root_ids[*]}"

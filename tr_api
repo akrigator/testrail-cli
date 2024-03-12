@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source output.sh
+source "${TESTRAIL_API_SOURCE}/cli/output.sh"
 
 _request() {
   local url="${TESTRAIL_API_URL}/index.php?/api/v2/${1:?Endpoint is required}"

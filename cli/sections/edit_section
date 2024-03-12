@@ -1,0 +1,12 @@
+#!/bin/bash
+source "${TESTRAIL_API_SOURCE}/cli/output.sh"
+
+id=${1:?Section ID is required}
+cmd=${2:?Comand is required}
+
+body=$(tr_api get_section "$id")
+test "$body" || ERROR "No section with ID $id"
+new_body=$(apply_cmd "$cmd" <<< "$body") \
+&& test "$new_body" \
+|| ERROR "Fail apply the '$cmd' to:\n" "$body" \
+&& tr_api update_section "$id" $(jq @json <<< $new_body)

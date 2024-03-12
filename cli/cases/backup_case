@@ -1,0 +1,7 @@
+#!/bin/bash
+source "${TESTRAIL_API_SOURCE}/cli/output.sh"
+
+case_id="${1:?Case ID is required}"
+backup_dir="${2:?Backup directory is required}"
+mkdir -p "$backup_dir"
+get_case "$case_id" | jq '.[]' > "${backup_dir}/${case_id}.json"

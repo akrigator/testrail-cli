@@ -1,0 +1,7 @@
+#!/bin/bash
+source "${TESTRAIL_API_SOURCE}/cli/output.sh"
+
+run=${1:?Run ID is required}
+case=${2:?Case ID is required}
+
+tr_api get_results_for_case "$run" "$case"

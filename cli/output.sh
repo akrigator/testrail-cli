@@ -15,6 +15,13 @@ read_stdin() {
   done
 }
 
+apply_cmd() {
+  local cmd=${1:?Command}
+  eval "$cmd" 2> /dev/null \
+  || ERROR "Execution of the \`$cmd\` command is failed" \
+  || return $?
+}
+
 color_to_stderr() {
   local color=${1:?Color}
   local message=${2:-}
