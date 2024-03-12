@@ -33,8 +33,8 @@ TESTRAIL_API_TEST() {
     "get_nested_sections 9999999"
   tr_test 'Get nested sections for section with id: 1 2 3' \
     "get_nested_sections 1"
-  tr_test 'Count of nested cases for the section id: 5' \
-    "get_nested_cases 1 | wc -l"
+  tr_test 'Count of nested cases for the section id, root 1 for local TR, root 401 for production TR, both should provide 5' \
+    "get_nested_cases 1 401 | wc -l"
   tr_test 'Count of nested cases for the section name: 5' \
     "find_section 1 1 Base | get_nested_cases | wc -l"
   tr_test 'Get failed tests in the section of plan: 1' \

@@ -2,7 +2,9 @@
 
 get_section() {
   local sections_ids=("${@}")
-  parallel -n1 -I% -d " " -P"$TESTRAIL_API_THREAD" './api get_section %' ::: "${sections_ids[*]}"
+  sections_ids+=("$(read_stdin)")
+  env_parallel -t -n1 -I% -d " " -r -P"$TESTRAIL_API_THREAD" './api get_section %' ::: "${sections_ids[@]}" \
+  | jq -s | jq -c 'select(length > 0)'
 }
 
 get_sections() {
@@ -13,32 +15,40 @@ get_sections() {
   || return $?
 }
 
+resolve_subsections() {
+    local section_id="${1:?Section IS is required}"
+    local suite
+    local project
+
+    suite=$(get_section "$section_id" | jq -r .suite_id)
+    test "$suite" || return 1
+    project=$(get_suite "$suite" | jq -r .project_id)
+    test "$project" || return 2
+    sections=$(get_sections "$project" "$suite")
+    test "$sections" || return 3
+    jq ".[] | select(.parent_id==$section_id) | .id" <<< "$sections"
+}
+
 get_subsections() {
   local root_ids=("${@}")
 
   root_ids+=( "$(read_stdin)" )
 
-  parallel -r -n1 -I% -d " " -P"$TESTRAIL_API_THREAD" "
-    suite=\$(get_section % | jq -r .suite_id)
-    test \$suite || return 1
-    project=\$(get_suite \$suite | jq -r .project_id)
-    test \$project || return 2
-    sections=\$(get_sections \$project \$suite)
-    test \$sections || return 3
-    jq '.[] | select(.parent_id==%) | .id' <<< \$sections
-    " ::: "${root_ids[*]}"
+  env_parallel -n1 -I% -d" " -r -P"$TESTRAIL_API_THREAD" resolve_subsections % ::: "${root_ids[*]}"
 }
 
 get_nested_sections() {
-  local root_sections_ids=("${@}")
-  local valid_roots
+  local sections_ids=("${@}")
+  local roots
+  sections_ids+=( "$(read_stdin)" )
 
-  root_sections_ids+=( "$(read_stdin)" )
+  test "${#sections_ids[@]}" -le 1 && ERROR empty && return 1
 
-  valid_roots="$(parallel -r -n1 -I% -d " " -P"$TESTRAIL_API_THREAD" get_section % ::: "${root_sections_ids[*]}" | jq .id)"
-  echo "$valid_roots"
+  roots="$(env_parallel -n1 -I% -d" " -r -P"$TESTRAIL_API_THREAD" get_section % ::: "${sections_ids[@]}" | jq .id)"
 
-  get_subsections "$( tr '\n' ' ' <<< "$valid_roots")" | parallel -r -n1 -I% -P"$TESTRAIL_API_THREAD" 'get_nested_sections %'
+  echo "$roots"
+
+  get_subsections <<< "$roots" | env_parallel -r -n1 -I% -P"$TESTRAIL_API_THREAD" get_nested_sections %
 }
 
 find_section() {

@@ -12,7 +12,9 @@ get_case() {
   local rc=0
   local cases
 
-  cases="$(parallel -n1 -I% -P"$TESTRAIL_API_THREAD" './api get_case %' ::: "${cases_ids[@]}")"
+  cases_ids+=("$(read_stdin)")
+
+  cases="$(parallel -n1 -I% -d" " -r -P"$TESTRAIL_API_THREAD" './api get_case %' ::: "${cases_ids[@]}")"
   rc=$?
 
   jq -sc 'select(length > 0)' <<< "$cases" || ERROR "Fails collect cases to json array"
@@ -22,7 +24,11 @@ get_case() {
 }
 
 get_case_formatted() {
-  get_case "${*:?Case id is required}" | jq -r '
+  local cases_ids=("${@}")
+
+  cases_ids+=("$(read_stdin)")
+
+  get_case "${cases_ids[@]}" | jq -r '
     .[] |
     "C\(.id): \(.title)\n\n"+
     "Preconditions:\n\(.custom_preconds)\n\n"+
@@ -32,19 +38,26 @@ get_case_formatted() {
   return $?
 }
 
+get_cases_from_section_single() {
+  section_id="${1:?Section ID is required}"
+
+  suite_id=$(get_section "$section_id" | jq -r .suite_id)
+  test -n "$suite_id" || return 1
+
+  project_id=$(get_suite "$suite_id" | jq -r .project_id)
+  test -n "$project_id" || return 2
+
+  ./api get_cases_from_section "$project_id" "$suite_id" "$section_id"
+}
+
 get_cases_from_section() {
   local section_id=("${@}")
-  local section_id_std=()
 
+  section_id+=( "$(read_stdin)" )
 
-  section_id_std=("$(read_stdin)") \
-  && section_id+=( "${section_id_std[@]}" )
-
-  parallel -n1 -I% -P"$TESTRAIL_API_THREAD" "
-  suite_id=\$(get_section % | jq -r .suite_id);
-  project_id=\$(get_suite \$suite_id | jq -r .project_id);
-  ./api get_cases_from_section \$project_id \$suite_id %;
-  " ::: "${section_id[@]}" | jq -c '.[]' | jq -sc
+  env_parallel -t -n1 -I% -d" " -r -P"$TESTRAIL_API_THREAD" get_cases_from_section_single % ::: "${section_id[@]}" \
+  | jq -c '.[]' | jq -sc | jq -c 'select(length > 0)'
+}
 
 #  local project_id
 #  local suite_id
@@ -61,7 +74,6 @@ get_cases_from_section() {
 #  ./api get_cases_from_section "$project_id" "$suite_id" "$section_id" \
 #  || ERROR "Couldn't get cases for section ID $section_id" \
 #  || return $?
-}
 
 update_case() {
   cases_json="$(read_stdin)"
@@ -95,12 +107,12 @@ edit_case() {
 
 get_nested_cases() {
   local sections_ids=("${@}")
-  local sections_ids_std=()
 
-  sections_ids_std=("$(read_stdin)") \
-  && sections_ids+=( "${sections_ids_std[@]}" )
+  sections_ids+=( "$(read_stdin)" )
 
-  get_nested_sections "${sections_ids[*]}" | get_cases_from_section | jq -M '.[] | .id'
+  test "${#sections_ids[@]}" -le 1 && ERROR "Nothing to get" && return 1
+
+  get_nested_sections "${sections_ids[@]}" | get_cases_from_section | jq -M '.[] | .id'
 }
 
 backup_case() {

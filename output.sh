@@ -27,21 +27,17 @@ DEBUG() {
   test "$TESTRAIL_API_DEBUG" \
   && color_to_stderr '36m' "${1}" "${2}"
 }
-export -f DEBUG
 
 INFO() {
   color_to_stderr '32m' "${1}" "${2}"
 }
-export -f INFO
 
 WARNING() {
   color_to_stderr '33m' "${1}" "${2}"
 }
-export -f WARNING
 
 ERROR() {
   local prev_rc=$?
   color_to_stderr '31m' "${1}" "${2}"
   return $prev_rc
 }
-export -f ERROR

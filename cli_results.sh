@@ -15,7 +15,7 @@ get_formatted_results() {
   ./api get_results_for_run "$run" | jq -r '.[] | .test_id' \
   | parallel -n1 -I% -P"$TESTRAIL_API_THREAD" './api get_test %' \
   | jq -r '.case_id' \
-  | parallel -n1 -I% -P"$TESTRAIL_API_THREAD" "get_formatted_results_for_case '$run' '%' '$format'" \
+  | env_parallel -n1 -I% -P"$TESTRAIL_API_THREAD" "get_formatted_results_for_case '$run' '%' '$format'" \
   | jq -s add
 }
 export -f get_formatted_results
