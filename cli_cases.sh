@@ -12,10 +12,10 @@ get_case() {
   local rc=0
   local cases
 
-  cases="$(xargs -I{} -n1 -P"$TESTRAIL_API_THREAD" ./api get_case {} <<< "${cases_ids[@]}")"
+  cases="$(parallel -n1 -I% -P"$TESTRAIL_API_THREAD" './api get_case %' ::: "${cases_ids[@]}")"
   rc=$?
 
-  jq -sc '. | select(length > 0)' <<< "$cases" || ERROR "Fails collect cases to json array"
+  jq -sc 'select(length > 0)' <<< "$cases" || ERROR "Fails collect cases to json array"
 
   test $rc -ne 0 && ERROR 'Fail to get some cases'
   return $rc
@@ -33,29 +33,40 @@ get_case_formatted() {
 }
 
 get_cases_from_section() {
-  local section_id=${1:?Section ID is required}
-  local project_id
-  local suite_id
+  local section_id=("${@}")
+  local section_id_std=()
 
-  suite_id="$(./api get_section "$section_id" | jq -r '.suite_id')"
-  test "$suite_id" \
-  || ERROR "No suite ID $section_id for section ID" \
-  || return $?
 
-  project_id="$(get_suite "$suite_id" | jq -r '.project_id')"
-  test "$project_id" \
-  || ERROR "No project ID $suite_id for suite ID" \
-  || return $?
+  section_id_std=("$(read_stdin)") \
+  && section_id+=( "${section_id_std[@]}" )
 
-  ./api get_cases_from_section "$project_id" "$suite_id" "$section_id" \
-  || ERROR "Couldn't get cases for section ID $section_id" \
-  || return $?
+  parallel -n1 -I% -P"$TESTRAIL_API_THREAD" "
+  suite_id=\$(get_section % | jq -r .suite_id);
+  project_id=\$(get_suite \$suite_id | jq -r .project_id);
+  ./api get_cases_from_section \$project_id \$suite_id %;
+  " ::: "${section_id[@]}" | jq -c '.[]' | jq -sc
+
+#  local project_id
+#  local suite_id
+#  suite_id="$(./api get_section "$section_id" | jq -r '.suite_id')"
+#  test "$suite_id" \
+#  || ERROR "No suite ID $section_id for section ID" \
+#  || return $?
+#
+#  project_id="$(get_suite "$suite_id" | jq -r '.project_id')"
+#  test "$project_id" \
+#  || ERROR "No project ID $suite_id for suite ID" \
+#  || return $?
+
+#  ./api get_cases_from_section "$project_id" "$suite_id" "$section_id" \
+#  || ERROR "Couldn't get cases for section ID $section_id" \
+#  || return $?
 }
 
 update_case() {
   cases_json="$(read_stdin)"
   jq -j 'map(@json) | join("\u0000")' <<< "$cases_json" \
-  | parallel -0 -n1 -I% "./api update_case \$(jq -r .id <<< %) \'%\'"
+  | parallel -0 -n1 -I% -P"$TESTRAIL_API_THREAD" "./api update_case \$(jq -r .id <<< %) \'%\'"
 }
 
 edit_case() {
@@ -82,29 +93,14 @@ edit_case() {
   update_case <<< "$json_after" || return $?
 }
 
-get_nested_cases_by_section_name() {
-  WARNING 'REFACTOR ME to pipeline `find_sections 1 1 Base | get_nested_cases_by_section_id )`'
-  local project=${1:?Project ID is required}
-  local suite=${2:?Suite ID is required}
-  local section_name="${3:?Section name is required}"
-  get_nested_sections_by_name "$project" "$suite" "$section_name" | while IFS= read -r section
-  do
-    ./api get_cases_from_section "$project" "$suite" "$section"
-  done | jq -M '.[] | .id'
-}
+get_nested_cases() {
+  local sections_ids=("${@}")
+  local sections_ids_std=()
 
-get_nested_cases_by_section_id() {
-  local section_id=${1:?Section ID is required}
-  local suite_id
-  local project_id
+  sections_ids_std=("$(read_stdin)") \
+  && sections_ids+=( "${sections_ids_std[@]}" )
 
-  suite_id="$(./api get_section "$section_id" | jq -r '.suite_id')" \
-  && test "$suite_id" \
-  && project_id="$(./api get_suite "$suite_id" | jq -r '.project_id')" \
-  && test "$project_id" \
-  && get_nested_sections "$section_id" \
-  | parallel -n1 -I% "./api get_cases_from_section $project_id $suite_id %" \
-  | jq -M '.[] | .id'
+  get_nested_sections "${sections_ids[*]}" | get_cases_from_section | jq -M '.[] | .id'
 }
 
 backup_case() {
@@ -123,7 +119,7 @@ backup_nested_cases_from_section() {
   ERROR "NOT IMPLEMENTED" || return 1
 
   backup_dir="$(realpath)/${section_id}_backup_$(date "+%Y-%m-%d_%H:%M:%S")"
-  get_nested_cases_by_section_id "$section_id" | while IFS= read -r case_id
+  get_nested_cases "$section_id" | while IFS= read -r case_id
   do
     backup_case "$case_id" "$backup_dir"
   done

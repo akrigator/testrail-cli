@@ -2,7 +2,7 @@
 
 caller_func_name() {
   test "$BASH_VERSION" && echo "${FUNCNAME[2]}" \
-  || (test "$ZSH" && sed 's/ / < /g' <<< "${funcstack[@]:2}") \
+  || (test "$ZSH" && echo "${funcstack[@]:2}") \
   || >&2 ERROR "COULD NOT DETERMINE SHELL"
 }
 

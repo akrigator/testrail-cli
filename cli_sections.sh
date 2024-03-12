@@ -1,41 +1,67 @@
 #!/bin/bash
 
-get_nested_sections() {
-  local root_sections_ids="${1:?Multyline list of root sections}"
-  local suite project sections children
-  while IFS= read -r root
-  do
-    suite="$(./api get_section "$root" | jq -r '.suite_id')" \
-    && test "$suite" \
-    && project="$(./api get_suite "$suite" | jq -r '.project_id')" \
-    && test "$project" \
-    && sections="$(./api get_sections "$project" "$suite")" \
-    && test "$sections" \
-    && children="$(jq -M ".[] | select(.parent_id == $root) | .id" <<< "$sections")" && test "$children" \
-    && echo "$root" "$children" \
-    && get_nested_sections "$children"
-  done <<< "$root_sections_ids" | tr ' ' '\n' | sort -u
+get_section() {
+  local sections_ids=("${@}")
+  parallel -n1 -I% -d " " -P"$TESTRAIL_API_THREAD" './api get_section %' ::: "${sections_ids[*]}"
 }
-export -f get_nested_sections
 
-get_nested_sections_by_name() {
+get_sections() {
+  local project_id=${1:?Project ID is required}
+  local suite_id=${2:?Suite ID is required}
+  ./api get_sections "$project_id" "$suite_id" \
+  || ERROR "Fail to get sections for suite $suite_id in project $project_id" \
+  || return $?
+}
+
+get_subsections() {
+  local root_ids=("${@}")
+
+  root_ids+=( "$(read_stdin)" )
+
+  parallel -r -n1 -I% -d " " -P"$TESTRAIL_API_THREAD" "
+    suite=\$(get_section % | jq -r .suite_id)
+    test \$suite || return 1
+    project=\$(get_suite \$suite | jq -r .project_id)
+    test \$project || return 2
+    sections=\$(get_sections \$project \$suite)
+    test \$sections || return 3
+    jq '.[] | select(.parent_id==%) | .id' <<< \$sections
+    " ::: "${root_ids[*]}"
+}
+
+get_nested_sections() {
+  local root_sections_ids=("${@}")
+  local valid_roots
+
+  root_sections_ids+=( "$(read_stdin)" )
+
+  valid_roots="$(parallel -r -n1 -I% -d " " -P"$TESTRAIL_API_THREAD" get_section % ::: "${root_sections_ids[*]}" | jq .id)"
+  echo "$valid_roots"
+
+  get_subsections "$( tr '\n' ' ' <<< "$valid_roots")" | parallel -r -n1 -I% -P"$TESTRAIL_API_THREAD" 'get_nested_sections %'
+}
+
+find_section() {
   local project=${1:?Project ID is required}
   local suite=${2:?Suite ID is required}
   local section_name="${3:?Parent section name required}"
-  local sections
-  local section_ids
-  local section_ids_count
-  sections=$(./api get_sections "$project" "$suite") \
-  && section_ids="$(jq -M ".[] | select(.name == \"$section_name\") | .id" <<< "$sections")" \
-  && section_ids_count="$(wc -w <<< "$section_ids")" \
-  && test "$section_ids_count" -eq 1 \
-  && get_nested_sections "$section_ids"  \
-  || (test "$section_ids_count" -eq 0 \
-      && ERROR "Project $project suite $suite doesn't have section with name '$section_name'") \
-  || (test "$section_ids_count" -gt 1 \
-      && WARNING "Multiple sections are available with the '$section_name' name: \n$section_ids")
+  local section_ids=()
+  local rc=0
+
+  section_ids=("$(get_sections "$project" "$suite" | jq -M ".[] | select(.name == \"$section_name\") | .id")")
+
+  test "$(wc -w <<< "${section_ids[@]}")" -eq 0 \
+  && ERROR "No section with name '$section_name'" \
+  && return 1
+
+  echo "${section_ids[@]}"
+
+  test "$(wc -w <<< "${section_ids[@]}")" -gt 1 \
+  && WARNING "Found multiple sections with name '$section_name'" \
+  && rc=2
+
+  return "$rc"
 }
-export -f get_nested_sections_by_name
 
 edit_section() {
   local \
@@ -49,4 +75,3 @@ edit_section() {
   || ERROR "Fail apply the '$cmd' to:\n" "$body" \
   && ./api update_section "$id" "$new_body" > /dev/null
 }
-export -f edit_section

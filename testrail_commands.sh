@@ -6,6 +6,7 @@ source "${TESTRAIL_API_SOURCE}/output.sh"
 source "${TESTRAIL_API_SOURCE}/cli_cases.sh"
 source "${TESTRAIL_API_SOURCE}/cli_results.sh"
 source "${TESTRAIL_API_SOURCE}/cli_sections.sh"
+source "${TESTRAIL_API_SOURCE}/cli_suites.sh"
 
 test "$TESTRAIL_API_USER" || ERROR "Specify user or email in TESTRAIL_API_USER variable"
 test "$TESTRAIL_API_KEY" || ERROR "Specify password or api-token TESTRAIL_API_KEY in variable"
@@ -25,17 +26,17 @@ TESTRAIL_API_TEST() {
   tr_test 'Check error if invalid command' \
     "edit_case 'fail' 2"
   tr_test 'Check error if non exist name section is requested' \
-    "get_nested_sections_by_name 1 1 'Activity logs'"
+    "find_section 1 1 'NON EXIST' | get_nested_cases"
   tr_test 'Check warning if multiple sections are available with same name' \
-    "get_nested_sections_by_name 4 1 'Activity Log'"
+    "find_section 1 1 Test | get_nested_cases"
   tr_test 'Check error if on exist id section is requested' \
     "get_nested_sections 9999999"
   tr_test 'Get nested sections for section with id: 1 2 3' \
     "get_nested_sections 1"
   tr_test 'Count of nested cases for the section id: 5' \
-    "get_nested_cases_by_section_id 1 | wc -l"
+    "get_nested_cases 1 | wc -l"
   tr_test 'Count of nested cases for the section name: 5' \
-    "get_nested_cases_by_section_name 1 1 Base | wc -l"
+    "find_section 1 1 Base | get_nested_cases | wc -l"
   tr_test 'Get failed tests in the section of plan: 1' \
     "get_formatted_results 1"
 }

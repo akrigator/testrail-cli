@@ -52,9 +52,9 @@ $ edit_case "jq  '.custom_expected=\"ASD\"'" 10081841
 # Both get_case and edit_case may process several cases. If there is issue to get some case then the error is pushed to dedicated output, all succeed cases print out to standard output.
 $ get_case 1 2 3
 
-$ edit_cases 'sed s/di_george/di-george/g' "$(get_nested_cases_by_section_id 21065)" 
+$ edit_cases 'sed s/di_george/di-george/g' "$(get_nested_cases 21065)" 
 $ edit_cases 'sed s/                \\"AGE_BASED\\", *\\r\\n                \\"UNIFORM\\",\\r\\n/                \\"AGE_BASED\\",\\r\\n                \\"UNIFORM\\",\\r\\n/g' \
-    "$(get_nested_cases_by_section_id 21066)" 
+    "$(get_nested_cases 21066)" 
 $ edit_cases 'sed s/, \\r\\n                    \\"XY\\": 1//g; s/\\"X\\": null/\\"XY\\": null/g; s/\\"X\\": -0.00001/\\"XY\\": -0.00001/g; s/\\"X\\": 1.00001/\\"XY\\": 1.00001/g;' "181819 182423 182576 182607 183381 183411 183350 183356 183497 183527" 
 ```
 

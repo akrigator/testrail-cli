@@ -13,13 +13,9 @@ get_formatted_results() {
   local format='[ .[] | {id, test_id, status_id, comment} | select(.status_id!=null)]'
 
   ./api get_results_for_run "$run" | jq -r '.[] | .test_id' \
-  | while read -r test
-  do
-    ./api get_test "$test"
-  done | jq -r '.case_id' \
-  | while read -r case
-  do
-    get_formatted_results_for_case "$run" "$case" "$format"
-  done | jq -s add
+  | parallel -n1 -I% -P"$TESTRAIL_API_THREAD" './api get_test %' \
+  | jq -r '.case_id' \
+  | parallel -n1 -I% -P"$TESTRAIL_API_THREAD" "get_formatted_results_for_case '$run' '%' '$format'" \
+  | jq -s add
 }
 export -f get_formatted_results
