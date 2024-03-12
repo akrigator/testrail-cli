@@ -14,7 +14,7 @@ get_case() {
 
   cases_ids+=("$(read_stdin)")
 
-  cases="$(parallel -n1 -I% -d" " -r -P"$TESTRAIL_API_THREAD" './api get_case %' ::: "${cases_ids[@]}")"
+  cases="$(parallel -n1 -I% -d" " -r -P"$TESTRAIL_API_THREAD" 'tr_api get_case %' ::: "${cases_ids[@]}")"
   rc=$?
 
   jq -sc 'select(length > 0)' <<< "$cases" || ERROR "Fails collect cases to json array"
@@ -47,7 +47,7 @@ get_cases_from_section_single() {
   project_id=$(get_suite "$suite_id" | jq -r .project_id)
   test -n "$project_id" || return 2
 
-  ./api get_cases_from_section "$project_id" "$suite_id" "$section_id"
+  tr_api get_cases_from_section "$project_id" "$suite_id" "$section_id"
 }
 
 get_cases_from_section() {
@@ -61,7 +61,7 @@ get_cases_from_section() {
 
 #  local project_id
 #  local suite_id
-#  suite_id="$(./api get_section "$section_id" | jq -r '.suite_id')"
+#  suite_id="$(tr_api get_section "$section_id" | jq -r '.suite_id')"
 #  test "$suite_id" \
 #  || ERROR "No suite ID $section_id for section ID" \
 #  || return $?
@@ -71,14 +71,9 @@ get_cases_from_section() {
 #  || ERROR "No project ID $suite_id for suite ID" \
 #  || return $?
 
-#  ./api get_cases_from_section "$project_id" "$suite_id" "$section_id" \
-#  || ERROR "Couldn't get cases for section ID $section_id" \
-#  || return $?
-
-update_case() {
-  cases_json="$(read_stdin)"
-  jq -j 'map(@json) | join("\u0000")' <<< "$cases_json" \
-  | parallel -0 -n1 -I% -P"$TESTRAIL_API_THREAD" "./api update_case \$(jq -r .id <<< %) \'%\'"
+  tr_api get_cases_from_section "$project_id" "$suite_id" "$section_id" \
+  || ERROR "Couldn't get cases for section ID $section_id" \
+  || return $?
 }
 
 edit_case() {

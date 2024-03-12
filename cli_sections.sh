@@ -3,14 +3,14 @@
 get_section() {
   local sections_ids=("${@}")
   sections_ids+=("$(read_stdin)")
-  env_parallel -t -n1 -I% -d " " -r -P"$TESTRAIL_API_THREAD" './api get_section %' ::: "${sections_ids[@]}" \
+  env_parallel -t -n1 -I% -d " " -r -P"$TESTRAIL_API_THREAD" 'tr_api get_section %' ::: "${sections_ids[@]}" \
   | jq -s | jq -c 'select(length > 0)'
 }
 
 get_sections() {
   local project_id=${1:?Project ID is required}
   local suite_id=${2:?Suite ID is required}
-  ./api get_sections "$project_id" "$suite_id" \
+  tr_api get_sections "$project_id" "$suite_id" \
   || ERROR "Fail to get sections for suite $suite_id in project $project_id" \
   || return $?
 }
@@ -79,9 +79,9 @@ edit_section() {
     cmd=${2:?Comand is required} \
     body \
     new_body \
-  && body=$(./api get_section "$id") \
+  && body=$(tr_api get_section "$id") \
   && new_body=$(eval "$cmd" <<< "$body") \
   && test "$new_body" \
   || ERROR "Fail apply the '$cmd' to:\n" "$body" \
-  && ./api update_section "$id" "$new_body" > /dev/null
+  && tr_api update_section "$id" "$new_body" > /dev/null
 }
