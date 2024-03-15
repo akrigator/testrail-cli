@@ -7,6 +7,6 @@ test "$(wc -w <<< "${sections_ids[@]}")" -eq 0 && ERROR "Section ID is required"
 
 roots="$(get_section "${sections_ids[@]}" | jq '.[] | .id' )"
 
-echo "$roots"
+test "$roots" && echo "$roots"
 
-get_subsections "$roots" | parallel -n1 -I% -r -P"$TESTRAIL_API_THREAD" get_nested_sections %
+get_subsections "$roots" | parallel -n1 -I% -r -P"$TESTRAIL_API_THREAD" "get_nested_sections %"

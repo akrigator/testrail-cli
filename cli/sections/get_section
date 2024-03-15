@@ -3,5 +3,5 @@ source "${TESTRAIL_API_SOURCE}/cli/output.sh"
 
 sections_ids=( "${@}" "$(read_stdin)" )
 
-parallel -n1 -I% -r -P"$TESTRAIL_API_THREAD" tr_api get_section % ::: "${sections_ids[@]}" \
+parallel -n1 -I% -r -P"$TESTRAIL_API_THREAD" "tr_api get_section %" ::: "${sections_ids[@]}" \
 | jq -s | jq -c 'select(length > 0)'

@@ -2,4 +2,4 @@
 source "${TESTRAIL_API_SOURCE}/cli/output.sh"
 
 read_stdin | jq -j 'map(@json) | join("\u0000")' \
-| parallel -0 -n1 -I% -P"$TESTRAIL_API_THREAD" tr_api update_case '$(jq -r .id <<< %)' '$(jq @json <<< %)'
+| parallel -0 -n1 -I% -P"$TESTRAIL_API_THREAD" "tr_api update_case \$(jq -r .id <<< %) \$(jq @json <<< %)"

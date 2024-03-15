@@ -13,4 +13,4 @@ json_after=$(apply_cmd "$cmd" <<< "$json_before") || exit $?
 #vimdiff -c 'windo set wrap'  <(jq -r <<< "$json_before") <(jq -r <<< "$json_after")
 #diff --color=always  <(jq -r <<< "$json_before") <(jq -r <<< "$json_after")
 
-update_case <<< "$json_after" || exit $?
+(update_case <<< "$json_after")| jq -cs

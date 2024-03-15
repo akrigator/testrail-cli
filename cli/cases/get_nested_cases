@@ -5,6 +5,6 @@ sections_ids=( "${@}" "$(read_stdin)" )
 
 test "$(wc -w <<< "${sections_ids[@]}")" -eq 0 && ERROR "Nothing to get" && exit 1
 
-parallel -n1 -I% -r -P"$TESTRAIL_API_THREAD" get_nested_sections ::: "${sections_ids[@]}" \
-| parallel -n1 -I% -r -P"$TESTRAIL_API_THREAD" get_cases_from_sections % \
+parallel -n1 -I% -r -P"$TESTRAIL_API_THREAD" "get_nested_sections %" ::: "${sections_ids[@]}" \
+| parallel -n1 -I% -r -P"$TESTRAIL_API_THREAD" "get_cases_from_sections %" \
 | jq -M '.[] | .id' | sort -u
