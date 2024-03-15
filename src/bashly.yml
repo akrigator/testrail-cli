@@ -1,0 +1,110 @@
+name: tr
+help: TestRail CLI
+version: 0.0.3
+
+environment_variables:
+  - name: testrail_api_user
+    help: Set your API user
+    required: true
+  - name: testrail_api_key
+    help: Set your API key
+    required: true
+  - name: testrail_api_url
+    help: Set your API url
+    required: true
+  - name: testrail_api_thread
+    help: Set your API threads count
+    default: "8"
+  - name: testrail_api_debug
+    help: Print TestRail API requests and responses to error output
+    default: no
+#  - name: testrail_api_source
+#    private: true
+
+commands:
+  - name: case
+    alias: c
+    expose: always
+    commands:
+      - name: get
+        alias: g
+        help: Getting cases json description array
+        catch_all:
+          &case_id
+          label: id
+          help: ID of one or more cases or sections (if `--section` flag is specified). Reads from stdin if empty or "-".
+        flags:
+          - &case_section
+            long: --section
+            short: -s
+          - &case_formatted
+            long: --formatted
+            short: -f
+            help: Use user predefined format
+        examples:
+          - tr case get 1 2 3
+          - echo \\'1\\\n2\\\n3\\' | tr case get -
+          - tr case get <<< 1 2 3
+          - tr case get --section 1 --formatted
+
+      - name: edit
+        alias: e
+        help: Update case by calling user defined command for case modification.
+        args:
+          - name: cmd
+            help: Command to modify JSON array of selected cases like, `sed` or `jq`.
+        catch_all:
+          *case_id
+        flags:
+          - *case_section
+          - long: --preview
+            short: -p
+            help: Show difference and confirmation before change apply (TODO_NOT_IMPLEMENTED)
+            private: true
+          - long: --manual
+            short: -m
+            help: Use file editor to modify manually. (TODO_NOT_IMPLEMENTED)
+            private: true
+        examples:
+          - tr case edit 'sed "s/product/Product/g; s/Check/Verify/g;"' 1 2 3
+          - tr case edit 'jq ".[] | .custom_field=1" | jq -s' 1 2 3
+
+      - name: update
+        help: Update cases from standard input
+        private: true
+        catch_all:
+          label: json
+          help: Json array with new cases objects descriptions.
+
+      - name: backup
+        help: Backup cases to local storage
+        catch_all:
+          *case_id
+        args:
+          - name: dir
+            help: Where to store a director with backups.
+            default: "~/"
+
+  - name: result
+    alias: u
+    help: Upload a file
+    commands:
+      - name: get
+        alias: g
+        args:
+          - name: run
+            help: Run ID
+        flags:
+          - *case_formatted
+        examples:
+          - tr result get 1
+
+  - name: section
+    alias: [g, group]
+
+  - name: suite
+    alias: s
+
+dependencies:
+  - curl
+  - parallel
