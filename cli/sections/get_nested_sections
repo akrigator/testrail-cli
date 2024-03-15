@@ -3,12 +3,10 @@ source "${TESTRAIL_API_SOURCE}/cli/output.sh"
 
 sections_ids=( "${@}" "$(read_stdin)" )
 
-test "$(wc -w <<< "${sections_ids[@]}")" -eq 0 && ERROR empty && return 1
+test "$(wc -w <<< "${sections_ids[@]}")" -eq 0 && ERROR "Section ID is required" && exit 1
 
-roots=$(get_section "${sections_ids[@]}" | jq '.[] | .id')
-
-test "$roots" || exit 1
+roots="$(get_section "${sections_ids[@]}" | jq '.[] | .id' )"
 
 echo "$roots"
-get_subsections "$roots" | parallel -n1 -I% -r -P"$TESTRAIL_API_THREAD" get_nested_sections %
 
+get_subsections "$roots" | parallel -n1 -I% -r -P"$TESTRAIL_API_THREAD" get_nested_sections %
