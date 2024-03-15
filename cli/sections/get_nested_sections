@@ -1,14 +1,14 @@
 #!/bin/bash
 source "${TESTRAIL_API_SOURCE}/cli/output.sh"
 
-sections_ids=("${@}")
+sections_ids=( "${@}" "$(read_stdin)" )
 
-sections_ids+=( "$(read_stdin)" )
+test "$(wc -w <<< "${sections_ids[@]}")" -eq 0 && ERROR empty && return 1
 
-test "${#sections_ids[@]}" -le 1 && ERROR empty && return 1
+roots=$(get_section "${sections_ids[@]}" | jq '.[] | .id')
 
-roots="$(parallel -n1 -I% -d" " -r -P"$TESTRAIL_API_THREAD" get_section % ::: "${sections_ids[*]}" | jq '.[] | .id')"
+test "$roots" || exit 1
 
 echo "$roots"
+get_subsections "$roots" | parallel -n1 -I% -r -P"$TESTRAIL_API_THREAD" get_nested_sections %
 
-tr ' ' '\n'  <<< "$roots" | get_subsections | parallel -r -n1 -I% -P"$TESTRAIL_API_THREAD" get_nested_sections %

@@ -1,9 +1,7 @@
 #!/bin/bash
 source "${TESTRAIL_API_SOURCE}/cli/output.sh"
 
-section_id=("${@}")
+section_id=( "${@}" "$(read_stdin)" )
 
-section_id+=( "$(read_stdin)" )
-
-parallel -n1 -I% -d" " -r -P"$TESTRAIL_API_THREAD" get_cases_from_section % ::: "${section_id[*]}" \
+parallel -n1 -I% -r -P"$TESTRAIL_API_THREAD" get_cases_from_section % ::: "${section_id[@]}" \
 | jq -c '.[]' | jq -sc | jq -c 'select(length > 0)'

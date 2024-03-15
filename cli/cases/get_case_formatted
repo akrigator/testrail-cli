@@ -1,9 +1,7 @@
 #!/bin/bash
 source "${TESTRAIL_API_SOURCE}/cli/output.sh"
 
-cases_ids=("${@}")
-
-cases_ids+=("$(read_stdin)")
+cases_ids=( "${@}" "$(read_stdin)" )
 
 get_case "${cases_ids[@]}" | jq -r '
 .[] |

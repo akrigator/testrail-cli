@@ -9,6 +9,7 @@ rc=0
 
 section_ids=("$(get_sections "$project" "$suite" | jq -M ".[] | select(.name == \"$section_name\") | .id")")
 section_ids_count="$(wc -w <<< "${section_ids[@]}")"
+
 test "$section_ids_count" -eq 0 \
 && ERROR "No section with name '$section_name'" \
 && exit 1

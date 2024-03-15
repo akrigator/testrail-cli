@@ -1,12 +1,10 @@
 #!/bin/bash
 source "${TESTRAIL_API_SOURCE}/cli/output.sh"
 
-cases_ids=("${@:?Case IDs are required}")
+cases_ids=("${@}" "$(read_stdin)")
 rc=0
 
-cases_ids+=("$(read_stdin)")
-
-cases="$(parallel -n1 -I% -d" " -r -P"$TESTRAIL_API_THREAD" 'tr_api get_case %' ::: "${cases_ids[*]}")"
+cases="$(parallel -n1 -I% -r -P"$TESTRAIL_API_THREAD" 'tr_api get_case %' ::: "${cases_ids[@]}")"
 rc=$?
 
 jq -sc 'select(length > 0)' <<< "$cases" || ERROR "Fails collect cases to json array"

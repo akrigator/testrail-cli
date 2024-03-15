@@ -10,8 +10,7 @@ read_stdin() {
   test ! -t 0 \
   && while IFS= read -r line
   do
-    std_in+=("$line")
-    printf "%s" "$line"
+    echo "$line"
   done
 }
 
