@@ -4,7 +4,6 @@ source "${TESTRAIL_API_SOURCE}/cli/output.sh"
 project=${1:?Project ID is required}
 suite=${2:?Suite ID is required}
 section_name="${3:?Parent section name required}"
-section_ids=()
 rc=0
 
 section_ids=("$(get_sections "$project" "$suite" | jq -M ".[] | select(.name == \"$section_name\") | .id")")

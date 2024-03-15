@@ -5,8 +5,8 @@ sections_ids=( "${@}" "$(read_stdin)" )
 
 test "$(wc -w <<< "${sections_ids[@]}")" -eq 0 && ERROR "Section ID is required" && exit 1
 
-roots="$(get_section "${sections_ids[@]}" | jq '.[] | .id' )"
+roots=( "$(get_section "${sections_ids[@]}" | jq '.[] | .id' )" )
 
-test "$roots" && echo "$roots"
+test "$(wc -w <<< "${roots[@]}")" -gt 0 && echo "${roots[@]}" || exit 0
 
-get_subsections "$roots" | parallel -n1 -I% -r -P"$TESTRAIL_API_THREAD" "get_nested_sections %"
+get_subsections "${roots[@]}" | parallel -n1 -I% -r -P"$TESTRAIL_API_THREAD" "get_nested_sections %"
