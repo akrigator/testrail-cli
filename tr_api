@@ -49,6 +49,13 @@ get_test() {
   || return $?
 }
 
+get_tests() {
+  local run_id=${1:?Run ID is required}
+  _request "get_tests/${run_id}" \
+  || ERROR "Couldn't get tests for run ID $run_id" \
+  || return $?
+}
+
 get_cases_from_section() {
   local project=${1:?Project ID is required}
   local suite=${2:?Suite ID is required}
@@ -114,6 +121,37 @@ delete_section() {
   local id=${1:?Section ID is required}
   _request "delete_section/${id}" -X POST \
   || ERROR "Couldn't update section with ID $id" \
+  || return $?
+}
+
+get_run() {
+  local run_id=${1:?Run ID is required}
+  _request "get_run/${run_id}" \
+  || ERROR "Couldn't get run run_id" \
+  || return $?
+}
+
+get_plan() {
+  local plan_id=${1:?Plan ID is required}
+  _request "get_plan/${plan_id}" \
+  || ERROR "Couldn't get plan $plan_id" \
+  || return $?
+}
+
+add_plan_entry() {
+  local plan_id=${1:?Plan ID is required}
+  local body=${2:?Test case is required}
+  _request "add_plan_entry/${plan_id}" -X POST -d "$body" \
+  || ERROR "Couldn't add to plan $plan_id" \
+  || return $?
+}
+
+update_plan_entry() {
+  local plan_id=${1:?Plan ID is required}
+  local entry_id=${2:?Entry ID is required}
+  local body=${3:?Test case is required}
+  _request "update_plan_entry/${plan_id}/${entry_id}" -X POST -d "$body" \
+  || ERROR "Couldn't update entry to $entry_id plan $plan_id" \
   || return $?
 }
 

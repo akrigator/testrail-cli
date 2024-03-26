@@ -1,0 +1,24 @@
+#!/bin/bash
+source "${TESTRAIL_API_SOURCE}/cli/output.sh"
+
+plan_id="${1:?Plan id required}"
+suite_id="${2:?Suit id required}"
+add_case_ids="${3:?Case ids json array required}"
+
+entry=$(get_plan "$plan_id" | jq -r --argjson s "$suite_id" '.[].entries[] | select(.suite_id==$s)')
+entry_id=$(jq -r '.id' <<< "$entry")
+
+run_id=$(jq -r --argjson s "$suite_id" '.runs[] | select(.suite_id==$s) | .id' <<< "$entry")
+cases_in_run=$(get_tests "$run_id" | jq '.[].case_id' | jq -s)
+request_cases_ids=$(jq -c --argjson c "$add_case_ids" '. + $c | unique' <<< "$cases_in_run")
+base_json=$(jq -cn --argjson c "$request_cases_ids" '{"include_all":false, "case_ids": $c}')
+
+if [ -n "$entry_id" ]
+then
+  suite_name=$(get_suite "$suite_id" | jq -r .name)
+  json_update=$(jq --arg n "$suite_name" '. + {"name": $n} | @json' <<< "$base_json")
+  tr_api update_plan_entry "$plan_id" "$entry_id" "$json_update"
+else
+  json_add=$(jq --arg s "$suite_id" '. + {"suite_id": $s} | @json' <<< "$base_json")
+  tr_api add_plan_entry "$plan_id" "$json_add"
+fi | jq -r '.runs[].url'

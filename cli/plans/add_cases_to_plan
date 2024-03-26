@@ -1,0 +1,10 @@
+#!/bin/bash
+source "${TESTRAIL_API_SOURCE}/cli/output.sh"
+
+plan_id="${1:?Plan id required}"
+cases_ids=("${@:2}" "$(read_stdin)")
+
+get_case "${cases_ids[@]}" |
+ jq 'group_by(.suite_id) | map( {suite_id: (.[0].suite_id), case_ids: [.[]| .id]} )' |
+ jq -j 'map(@json) | join("\u0000")' |
+ parallel -0 -n1 -I% -P1 "add_suite_cases_to_plan $plan_id \$(jq -r .suite_id <<< %) \$(jq -c '.case_ids' <<< %)"

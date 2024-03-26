@@ -1,0 +1,13 @@
+#!/bin/bash
+source "${TESTRAIL_API_SOURCE}/cli/output.sh"
+
+plan_ids=("${@}" "$(read_stdin)")
+rc=0
+
+plans="$(parallel -n1 -I% -r -P"$TESTRAIL_API_THREAD" "tr_api get_plan %" ::: "${plan_ids[@]}")"
+rc=$?
+
+jq -sc 'select(length > 0)' <<< "$plans" || ERROR "Fails collect cases to json array"
+
+test $rc -ne 0 && ERROR "Fail to get some plans"
+exit $rc

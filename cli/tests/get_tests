@@ -1,0 +1,13 @@
+#!/bin/bash
+source "${TESTRAIL_API_SOURCE}/cli/output.sh"
+
+run_ids=("${@}" "$(read_stdin)")
+rc=0
+
+tests="$(parallel -n1 -I% -r -P"$TESTRAIL_API_THREAD" "tr_api get_tests %" ::: "${run_ids[@]}")"
+rc=$?
+
+(jq -c '.[] | select(length > 0)' <<< "$tests" | jq -s ) || ERROR "Fails collect tests to json array"
+
+test $rc -ne 0 && ERROR "Fail to get some tests"
+exit $rc
